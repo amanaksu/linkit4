@@ -51,8 +51,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 }
 
 /* ----- board ----- */
-.board-wrap{container-type:inline-size;aspect-ratio:1;max-width:100%}
-.board{width:100%;height:100%;padding:2.2cqi;border-radius:2.4cqi;
+.board-wrap{container-type:inline-size;max-width:100%;position:relative}
+.board-wrap::before{content:"";display:block;padding-top:100%}
+.board{position:absolute;top:0;left:0;width:100%;height:100%;padding:2.2cqi;border-radius:2.4cqi;
   background:
     repeating-linear-gradient(92deg,transparent 0 7px,rgba(120,80,30,.06) 7px 9px),
     linear-gradient(160deg,#efd9ab,var(--wood) 45%,var(--wood-dk));
@@ -104,10 +105,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .pips i{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink-dim)}
 .pips i.used{background:var(--gold);border-color:var(--gold)}
 .dice{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-.die{aspect-ratio:1;border:none;border-radius:16%;background:#fbf6ea;box-shadow:0 -4px 0 #d7ccb4 inset,0 4px 10px rgba(0,0,0,.3);padding:16%;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);position:relative;transition:transform .15s}
-.die i{border-radius:50%;margin:10%}
-.die i.on{background:#2b2117}
-.die.v1 i.on,.die.v4 i.on{background:#c23a24}
+.die{display:block;width:100%;border:none;border-radius:16%;background:#fbf6ea;box-shadow:0 -4px 0 #d7ccb4 inset,0 4px 10px rgba(0,0,0,.3);padding:0;margin:0;position:relative;transition:transform .15s;-webkit-appearance:none;appearance:none}
+.die svg{display:block;width:100%;height:auto;pointer-events:none}
 .die.blank{opacity:.35}
 .die.held{transform:translateY(-6px);box-shadow:0 0 0 3px var(--gold),0 -4px 0 #d7ccb4 inset,0 10px 14px rgba(0,0,0,.35)}
 .die.held::after{content:"고정";position:absolute;left:50%;bottom:-20px;transform:translateX(-50%);font-size:11px;color:var(--gold);font-weight:700}
@@ -327,7 +326,7 @@ function render(){
   const P=S.players[S.cur];
   $('turnName').innerHTML=S.over?'게임 끝':`<span style="color:${P.color}">●</span> ${esc(P.name)} 차례`;
   $('pips').innerHTML=[0,1,2,3,4].map(k=>`<i class="${k<S.rolls?'used':''}"></i>`).join('');
-  $('dice').innerHTML=S.dice.map((v,k)=>`<button class="die ${v?'v'+v:'blank'} ${S.held[k]?'held':''}" data-k="${k}" aria-label="주사위 ${k+1}: ${v||'없음'}${S.held[k]?', 고정됨':''}">${[...Array(9)].map((_,j)=>`<i class="${v&&PIPS[v].includes(j)?'on':''}"></i>`).join('')}</button>`).join('');
+  $('dice').innerHTML=S.dice.map((v,k)=>`<button class="die ${v?'v'+v:'blank'} ${S.held[k]?'held':''}" data-k="${k}" aria-label="주사위 ${k+1}: ${v||'없음'}${S.held[k]?', 고정됨':''}">${dieFace(v)}</button>`).join('');
   const combos=[...analyze(S.dice)];
   const order=['YZ','4K','FH','ST','3K','P6','P5','P4','P3','P2','P1'];
   combos.sort((a,b)=>order.indexOf(a)-order.indexOf(b));
@@ -362,7 +361,12 @@ async function roll(){
   S.rolls++;busy=false;render();
 }
 function drawDiceOnly(){
-  document.querySelectorAll('.die').forEach((e,k)=>{const v=S.dice[k];e.className=`die v${v} ${S.held[k]?'held':''} ${S.held[k]?'':'rolling'}`;e.querySelectorAll('i').forEach((p,j)=>p.className=PIPS[v].includes(j)?'on':'')});
+  document.querySelectorAll('.die').forEach((e,k)=>{const v=S.dice[k];e.className=`die v${v} ${S.held[k]?'held':''} ${S.held[k]?'':'rolling'}`;e.innerHTML=dieFace(v)});
+}
+function dieFace(v){
+  const col=(v===1||v===4)?'#c23a24':'#2b2117';
+  const dots=v?PIPS[v].map(k=>`<circle cx="${25+25*(k%3)}" cy="${25+25*Math.floor(k/3)}" r="9" fill="${col}"/>`).join(''):'';
+  return `<svg viewBox="0 0 100 100" width="100" height="100" aria-hidden="true">${dots}</svg>`;
 }
 
 function place(i){
